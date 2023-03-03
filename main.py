@@ -2,8 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from PIL import Image
-from plotly.subplots import make_subplots
-from datetime import date
 #=====================================================
 #read data from excel file, combine according to date
 dt_fulldata = pd.read_csv('sird_data.csv')
