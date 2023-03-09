@@ -13,7 +13,7 @@ from datetime import date
 dt_fulldata = pd.read_csv('sird_data.csv')
 dt_fulldata['date'] = pd.to_datetime(dt_fulldata['date'])
 dt_fulldata = dt_fulldata.set_index(['date'])
-dt_fulldata = dt_fulldata.tail(dt_fulldata.shape[0] - 8)
+dt_fulldata = dt_fulldata.tail(dt_fulldata.shape[0]- 8)
 Ptotal = int(3.153*10**7);
 #=====================================================
 #assign initial value
@@ -90,8 +90,10 @@ def parameter_func(j,guiinput):
         d = dt_mcmcresult['d'].iloc[j.astype(int)-1];
         gamma = dt_mcmcresult['gamma'].iloc[j.astype(int)-1];
         sigma = dt_mcmcresult['sigma'].iloc[j.astype(int)-1];
-        if settings_entry1 == 1:
-            sigma = sigma*5;
+        if settings_entry1 == 0:
+            sigma = 0.00;
+        else:
+            sigma = 0.05;
     else:
         npidatestart1 = datetoint(userinput_entry11);
         npidateend1   = datetoint(userinput_entry12);
@@ -110,12 +112,12 @@ def parameter_func(j,guiinput):
         npidatestart8 = datetoint(userinput_entry81);
         npidateend8   = datetoint(userinput_entry82);
         
-        futbetavalues = [0.09,0.06,0.045];
+        futbetavalues = [0.105,0.068,0.035];
 
-        if settings_entry1 == 1:
-            sigma = 0;
+        if settings_entry1 == 0:
+            sigma = 0.00;
         else:
-            sigma = 0.005;
+            sigma = 0.05;
                
         if j > npidatestart1 and j <= npidateend1:
             Beta = futbetavalues[NPIoptiontoint(userinput_entry13)]
@@ -134,7 +136,7 @@ def parameter_func(j,guiinput):
         if j > npidatestart8 and j <= npidateend8:
             Beta = futbetavalues[NPIoptiontoint(userinput_entry83)]
             
-        r, d, gamma, sigma = log_func(j,*pars), log_func(j,*pars2), mean_gamma, sigma
+        r, d, gamma, sigma = log_func(j,*pars), log_func(j,*pars2), gamma, sigma
     return Beta, r, d, gamma, sigma
 
 #=====================================================
@@ -271,7 +273,7 @@ def SIRD_func(t0,dt,N,M,Szero,Izero,Rzero,Dzero,Ptotal,guiinput):
         Itemp = Itemp + dt*((1/6)*f1_I + (1/3)*f2_I + (1/3)*f3_I + (1/6)*f4_I) + (G_1[0]*IWinc1 + G_2[0]*IJ10)*g1_I + (G_1[1]*IWinc1 + G_2[1]*IJ10)*g2_I + (G_1[2]*IWinc1 + G_2[2]*IJ10)*g3_I + (G_1[3]*IWinc1 + G_2[3]*IJ10)*g4_I;
         Rtemp = Rtemp + dt*((1/6)*f1_R + (1/3)*f2_R + (1/3)*f3_R + (1/6)*f4_R) + (G_1[0]*RWinc1 + G_2[0]*RJ10)*g1_R + (G_1[1]*RWinc1 + G_2[1]*RJ10)*g2_R + (G_1[2]*RWinc1 + G_2[2]*RJ10)*g3_R + (G_1[3]*RWinc1 + G_2[3]*RJ10)*g4_R;
         Dtemp = Dtemp + dt*((1/6)*f1_D + (1/3)*f2_D + (1/3)*f3_D + (1/6)*f4_D) + (G_1[0]*DWinc1 + G_2[0]*DJ10)*g1_D + (G_1[1]*DWinc1 + G_2[1]*DJ10)*g2_D + (G_1[2]*DWinc1 + G_2[2]*DJ10)*g3_D + (G_1[3]*DWinc1 + G_2[3]*DJ10)*g4_D;
-        
+                    
         Ssrk4_2[int(j) - t0] = Stemp;
         Isrk4_2[int(j) - t0] = Itemp;
         Rsrk4_2[int(j) - t0] = Rtemp;
@@ -280,7 +282,7 @@ def SIRD_func(t0,dt,N,M,Szero,Izero,Rzero,Dzero,Ptotal,guiinput):
     return Ssrk4_2, Isrk4_2, Rsrk4_2, Dsrk4_2
 
 st.set_page_config(
-    page_title="Real-Time Data Science Dashboard",
+    page_title="SIRD Numerical Projection",
     page_icon="✅",
     layout="wide",
 )
@@ -329,9 +331,9 @@ guiinput1 = [0,
 Ssrk4_2, Isrk4_2, Rsrk4_2, Dsrk4_2 = SIRD_func(t0,dt,N,M,Szero,Izero,Rzero,Dzero,Ptotal,guiinput1)
 
 #=====================================================
-lowper = 25;
-mean = 50;
-highper = 75;
+lowper = 0.25;
+mean = .50;
+highper = .75;
 percentileSsrk4 = np.ones((N+1,3));
 percentileIsrk4 = np.ones((N+1,3));
 percentileRsrk4 = np.ones((N+1,3));
@@ -345,10 +347,10 @@ percentileDfut = np.ones((N+1,3));
 settings_entry1 = 1;
 
 for j in np.linspace(t0,t0+N,N+1):
-    percentileSsrk4[j.astype(int)] = np.percentile(np.transpose(Ssrk4_2[j.astype(int),:]),[lowper,mean,highper]);
-    percentileIsrk4[j.astype(int)] = np.percentile(np.transpose(Isrk4_2[j.astype(int),:]),[lowper,mean,highper]);
-    percentileRsrk4[j.astype(int)] = np.percentile(np.transpose(Rsrk4_2[j.astype(int),:]),[lowper,mean,highper]);
-    percentileDsrk4[j.astype(int)] = np.percentile(np.transpose(Dsrk4_2[j.astype(int),:]),[lowper,mean,highper]);
+    percentileSsrk4[j.astype(int)] = (pd.Series(Ssrk4_2[j.astype(int),:])).quantile([lowper,mean,highper]);
+    percentileIsrk4[j.astype(int)] = (pd.Series(Isrk4_2[j.astype(int),:])).quantile([lowper,mean,highper]);
+    percentileRsrk4[j.astype(int)] = (pd.Series(Rsrk4_2[j.astype(int),:])).quantile([lowper,mean,highper]);
+    percentileDsrk4[j.astype(int)] = (pd.Series(Dsrk4_2[j.astype(int),:])).quantile([lowper,mean,highper]);
 
 guiinput2 = [settings_entry1,
         userinput_entry11,userinput_entry12,userinput_entry13,
@@ -363,10 +365,10 @@ guiinput2 = [settings_entry1,
 Sfut_2, Ifut_2, Rfut_2, Dfut_2 = SIRD_func(T,dt,N,M,percentileSsrk4[N,1],percentileIsrk4[N,1],percentileRsrk4[N,1],percentileDsrk4[N,1],Ptotal,guiinput2)
 
 for j in np.linspace(t0,t0+N,N+1):
-    percentileSfut[j.astype(int)] = np.percentile(np.transpose(Sfut_2[j.astype(int),:]),[lowper,mean,highper]);
-    percentileIfut[j.astype(int)] = np.percentile(np.transpose(Ifut_2[j.astype(int),:]),[lowper,mean,highper]);
-    percentileRfut[j.astype(int)] = np.percentile(np.transpose(Rfut_2[j.astype(int),:]),[lowper,mean,highper]);
-    percentileDfut[j.astype(int)] = np.percentile(np.transpose(Dfut_2[j.astype(int),:]),[lowper,mean,highper]);
+    percentileSfut[j.astype(int)] = (pd.Series(Sfut_2[j.astype(int),:])).quantile([lowper,mean,highper]);
+    percentileIfut[j.astype(int)] = (pd.Series(Ifut_2[j.astype(int),:])).quantile([lowper,mean,highper]);
+    percentileRfut[j.astype(int)] = (pd.Series(Rfut_2[j.astype(int),:])).quantile([lowper,mean,highper]);
+    percentileDfut[j.astype(int)] = (pd.Series(Dfut_2[j.astype(int),:])).quantile([lowper,mean,highper]);
 
 futpltxend = max(datetoint(userinput_entry12),datetoint(userinput_entry22),datetoint(userinput_entry32),datetoint(userinput_entry42),datetoint(userinput_entry52),datetoint(userinput_entry62),datetoint(userinput_entry72),datetoint(userinput_entry82))
 futpltxlim = futpltxend-T;
@@ -423,17 +425,29 @@ fig_SIRD_projection['layout']['xaxis2']['title']='t(days)'
 #fig_SIRD_projection.update_xaxes(showline=True, linewidth=2, linecolor='white', mirror=True)
 #fig_SIRD_projection.update_yaxes(showline=True, linewidth=2, linecolor='white', mirror=True)
 
+def plus_one():
+    if st.session_state["slider"] < 10:
+        st.session_state.slider += 1
+    else:
+        pass
+    return
+
+if 'histxlimkey' not in st.session_state:
+    st.session_state['histxlimkey'] = 1075
+    
+histxlim = st.session_state['histxlimkey'];
+            
 fig_beta_hist = go.Figure()
-fig_beta_hist.add_trace(go.Histogram(x=dt_mcmcresult['beta'],showlegend= False,
-    xbins=dict(start=0,end=0.03,size=0.01),marker_color='#5A5A5A',opacity=0.75))
-fig_beta_hist.add_trace(go.Histogram(x=dt_mcmcresult['beta'],name = 'Strict NPI',
-    xbins=dict(start=0.03,end=0.06,size=0.01),marker_color='#BFFF00',opacity=0.75))
-fig_beta_hist.add_trace(go.Histogram(x=dt_mcmcresult['beta'],name = 'Mild NPI',
-    xbins=dict(start=0.06,end=0.08,size=0.01),marker_color='#00FFFF',opacity=0.75))
-fig_beta_hist.add_trace(go.Histogram(x=dt_mcmcresult['beta'],name = 'Loose NPI',
-    xbins=dict(start=0.08,end=0.13,size=0.01),marker_color='#C70039',opacity=0.75))
-fig_beta_hist.add_trace(go.Histogram(x=dt_mcmcresult['beta'],showlegend= False,
-    xbins=dict(start=0.13,end=0.16,size=0.01),
+fig_beta_hist.add_trace(go.Histogram(x=dt_mcmcresult['beta'][:histxlim],showlegend= False,
+    xbins=dict(start=0,end=0.008,size=0.004),marker_color='#5A5A5A',opacity=0.75))
+fig_beta_hist.add_trace(go.Histogram(x=dt_mcmcresult['beta'][:histxlim],name = 'Strict NPI',
+    xbins=dict(start=0.008,end=0.048,size=0.004),marker_color='#BFFF00',opacity=0.75))
+fig_beta_hist.add_trace(go.Histogram(x=dt_mcmcresult['beta'][:histxlim],name = 'Mild NPI',
+    xbins=dict(start=0.048,end=0.072,size=0.004),marker_color='#00FFFF',opacity=0.75))
+fig_beta_hist.add_trace(go.Histogram(x=dt_mcmcresult['beta'][:histxlim],name = 'Loose NPI',
+    xbins=dict(start=0.073,end=0.13,size=0.004),marker_color='#C70039',opacity=0.75))
+fig_beta_hist.add_trace(go.Histogram(x=dt_mcmcresult['beta'][:histxlim],showlegend= False,
+    xbins=dict(start=0.14,end=0.16,size=0.004),
     marker_color='#5A5A5A',opacity=0.75))
 fig_beta_hist.update_layout(height=300)
 fig_beta_hist.update_layout(margin=dict(l=20, r=20, t=20, b=20),xaxis_title="Infectious rate",yaxis_title="Frequency",)
@@ -441,10 +455,10 @@ fig_beta_hist.update_layout(margin=dict(l=20, r=20, t=20, b=20),xaxis_title="Inf
 #fig_beta_hist.update_yaxes(showline=True, linewidth=2, linecolor='white', mirror=True)
 
 fig_rd_trend = make_subplots(specs=[[{"secondary_y": True}]])
-fig_rd_trend.add_trace(go.Scatter(x = pastplot_t, y= dt_mcmcresult['r'],showlegend= False,line = dict(color = 'lawngreen')),secondary_y = False)
-fig_rd_trend.add_trace(go.Scatter(x = pastplot_t, y = log_func(data_t,*pars),showlegend= False,mode = 'lines', line = dict(color = 'olive', width = 3, dash='dash')), secondary_y = False)
-fig_rd_trend.add_trace(go.Scatter(x = pastplot_t, y= dt_mcmcresult['d'],showlegend= False,line = dict(color = 'maroon')), secondary_y = True)
-fig_rd_trend.add_trace(go.Scatter(x = pastplot_t, y = log_func(data_t,*pars2),showlegend= False,mode = 'lines', line = dict(color = 'tomato', width = 3, dash='dash')),secondary_y = True)
+fig_rd_trend.add_trace(go.Scatter(x = pastplot_t, y= dt_mcmcresult['r'][:histxlim],showlegend= False,line = dict(color = 'lawngreen')),secondary_y = False)
+fig_rd_trend.add_trace(go.Scatter(x = pastplot_t, y = log_func(data_t[:histxlim],*pars),showlegend= False,mode = 'lines', line = dict(color = 'olive', width = 3, dash='dash')), secondary_y = False)
+fig_rd_trend.add_trace(go.Scatter(x = pastplot_t, y= dt_mcmcresult['d'][:histxlim],showlegend= False,line = dict(color = 'maroon')), secondary_y = True)
+fig_rd_trend.add_trace(go.Scatter(x = pastplot_t, y = log_func(data_t[:histxlim],*pars2),showlegend= False,mode = 'lines', line = dict(color = 'tomato', width = 3, dash='dash')),secondary_y = True)
 fig_rd_trend.update_layout(height=300)
 fig_rd_trend.update_layout(margin=dict(l=20, r=20, t=20, b=20))
 #fig_rd_trend.update_xaxes(showline=True, linewidth=2, linecolor='white', mirror=True)
@@ -474,8 +488,6 @@ fig_beta_hist.update_layout(margin=dict(l=20, r=20, t=20, b=20),)
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs(["Malaysia", "Singapore", "US", "Italy","China"])
 #tab1 = st.tabs(["Malaysia"])
-
-
 with tab1:
     with st.container():
         col1, col2 = st.columns([10, 3.5], gap = 'small')
@@ -483,7 +495,7 @@ with tab1:
             st.markdown(""" <style> .font {
             font-size:30px ; font-family: 'courier bold'; color: "white";} 
             </style> """, unsafe_allow_html=True)
-            st.markdown("<h1 style='text-align: center'; class='font'>SIRD Numerical Projection</h1>", unsafe_allow_html=True)
+            st.markdown("<h1 style='text-align: center'; class='font'>Endemic Projection</h1>", unsafe_allow_html=True)
         with col2:
             st.markdown(""" <style> .font {
             font-size:30px ; font-family: 'courier bold'; color: "white";} 
@@ -492,8 +504,11 @@ with tab1:
     with st.container():
         col1, col2 = st.columns([10, 3.5], gap = 'small')
         col1.plotly_chart(fig_SIRD_projection, use_container_width=True)
-        col2.plotly_chart(fig_beta_hist, use_container_width=True)
-        col2.plotly_chart(fig_rd_trend, use_container_width=True)
-        
+
+        with col2:
+            col2.plotly_chart(fig_beta_hist, use_container_width=True)
+            col2.plotly_chart(fig_rd_trend, use_container_width=True)
+            col2.slider('Duration of parameter observation', 10,1075, key = "histxlimkey");
+ 
     with st.container():
         col1, col2 = st.columns([10, 3.5], gap = 'small')
